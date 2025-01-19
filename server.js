@@ -1,5 +1,6 @@
 const express = require('express');
 const userApi = require('./routes/users');
+const fileApi = require('./routes/files');
 
 const cors = require('cors');
 require('./config/connect');
@@ -13,6 +14,7 @@ app.use(cors());
 
 
 app.use('/user' , userApi);
+app.use('/file',fileApi);
 
 app.use('/uploads' , express.static('uploads'));
 

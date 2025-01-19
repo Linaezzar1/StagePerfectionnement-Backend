@@ -79,6 +79,28 @@ exports.getUserById = (req, res) => {
     });
 }
 
+exports.getCurrentUser = async (req, res) => {
+    try {
+        const userId = req.user._id; 
+        const user = await User.findOne({ _id: userId });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const userData = {
+            name: user.name,
+            lastname: user.lastname,
+            email: user.email,
+            role: user.role,
+        };
+
+        res.status(200).json(userData);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({ message: 'Error fetching user', error: error.message });
+    }
+};
 
 
 exports.resetPassword = async(req,res) => {

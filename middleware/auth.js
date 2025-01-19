@@ -7,7 +7,7 @@ module.exports = (req, res,next)=> {
         return res.status(401).json({ message: 'No token provided.' });
     }
 
-    const token = authHeader.replace('Bearer' , '');
+    const token = authHeader.replace('Bearer ' , '');
 
     try {
         const verified = jwt.verify(token, "123456789");
