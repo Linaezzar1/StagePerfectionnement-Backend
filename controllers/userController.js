@@ -133,3 +133,25 @@ exports.resetPassword = async(req,res) => {
         return res.status(500).json({message : 'Error while resetting password' , error: error.message})
     }
 }
+
+exports.updateActiveStatus = async (req, res) => {
+    const { userId, isActive } = req.body;
+  
+    try {
+      const user = await User.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      user.ActiveStatus = isActive ? 'Active' : 'Inactive';
+      await user.save();
+  
+      res.status(200).json({ message: 'Active status updated successfully' });
+    } catch (error) {
+      console.error('Error updating active status:', error);
+      res.status(500).json({ message: 'Error updating active status' });
+    }
+  };
+
+  

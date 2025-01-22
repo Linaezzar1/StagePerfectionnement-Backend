@@ -7,6 +7,11 @@ const auth = require('../middleware/auth');
 
 router.get('/getFiles', fileController.getFiles);
 router.get('/getFileById/:id', fileController.getFileById);
+router.get('/countByUser', fileController.getFilesCountByUser);
+router.get('/countByMonth' , fileController.countByMonth);
+router.get('/modifiedStats' , fileController.modifiedstats);
+router.get('/getCreatedFiles' , fileController.getCreatedFilesThisWeek);
+router.get('/getModifiedFiles' , fileController.getModifiedFilesThisWeek);
 
 
 router.post('/addFile',auth, fileController.createFile);

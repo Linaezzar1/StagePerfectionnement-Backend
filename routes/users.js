@@ -11,6 +11,8 @@ router.post('/resetPassword', auth , userController.resetPassword);
 
 router.get('/all', userController.getAllUsers);
 router.get('/userbyid/:id', userController.getUserById);
-router.get('/current-user', auth, userController.getCurrentUser);
+router.get('/currentUser', auth, userController.getCurrentUser);
+
+router.patch('/activeStatus' , userController.updateActiveStatus);
 
 module.exports = router;
