@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const userApi = require('./routes/users');
 const fileApi = require('./routes/files');
-const folderApi = require('./routes/folders');
+
 
 const cors = require('cors');
 
@@ -58,11 +58,8 @@ app.use(express.json());
 
 app.use(cors());
 
-
-
 app.use('/user' , userApi);
 app.use('/file',fileApi);
-app.use('/folder', folderApi)
 
 app.use('/uploads' , express.static('uploads'));
 

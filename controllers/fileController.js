@@ -34,18 +34,18 @@ exports.createFile = async (req, res) => {
         const userId = req.user._id;  
 
 
-        // Créez le fichier
+        
         const newFile = new File({
             userId,
             name,
-            content: content || '', // Définit un contenu par défaut si non fourni,
+            content: content || '', 
             language: language
         });
 
-        // Sauvegardez le fichier dans la base de données
+       
         await newFile.save();
 
-        // Retournez le fichier créé
+        
         res.status(201).json(newFile);
     } catch (error) {
         res.status(500).json({ message: "Erreur lors de la création du fichier", error });
@@ -81,29 +81,27 @@ exports.deleteFile = async (req, res) => {
 
 exports.getFilesCountByUser = async (req, res) => {
     try {
-      // Récupérer tous les fichiers et les informations des utilisateurs avec populate
       const files = await File.aggregate([
         {
           $group: {
-            _id: "$userId", // Grouper par userId
-            totalFiles: { $sum: 1 }, // Compter le nombre de fichiers
+            _id: "$userId", 
+            totalFiles: { $sum: 1 },
           }
         },
         {
           $lookup: {
-            from: 'users', // Nom de la collection des utilisateurs
-            localField: '_id', // Champ auquel l'ID correspond
-            foreignField: '_id', // Champ dans la collection 'users' correspondant à localField
+            from: 'users', 
+            localField: '_id', 
+            foreignField: '_id', 
             as: 'userInfo'
           }
         },
         {
-          $unwind: "$userInfo" // Décomposé l'objet 'userInfo'
+          $unwind: "$userInfo" 
         }
       ]);
 
       console.log(files);
-      // Retourner la réponse avec les utilisateurs et leur nombre de fichiers
       res.status(200).json(files);
     } catch (error) {
       res.status(500).json({ message: 'Erreur lors du comptage des fichiers', error });
@@ -138,7 +136,7 @@ exports.modifiedstats = async (req, res) => {
     const stats = await File.aggregate([
       {
         $match: {
-          $expr: { $ne: ['$createdAt', '$updatedAt'] } // Exclure les fichiers non modifiés
+          $expr: { $ne: ['$createdAt', '$updatedAt'] } 
         }
       },
       {
@@ -164,7 +162,7 @@ exports.modifiedstats = async (req, res) => {
 
 exports.getCreatedFilesThisWeek = async (req, res) => {
     try {
-      const userId = req.user._id; // ID de l'utilisateur connecté
+      const userId = req.user._id; 
 
       console.log('User ID:', userId);
 
@@ -172,8 +170,8 @@ exports.getCreatedFilesThisWeek = async (req, res) => {
         return res.status(400).json({ message: 'ID utilisateur invalide' });
       }
   
-      const startOfWeek = moment().startOf('week').toDate(); // Début de la semaine
-      const endOfWeek = moment(startOfWeek).endOf('week').toDate(); // Fin de la semaine
+      const startOfWeek = moment().startOf('week').toDate(); 
+      const endOfWeek = moment(startOfWeek).endOf('week').toDate();
       console.log(startOfWeek);
       console.log(endOfWeek);
       
@@ -182,7 +180,7 @@ exports.getCreatedFilesThisWeek = async (req, res) => {
         {
           $match: {
             userId: mongoose.Types.ObjectId(userId), 
-            createdAt: { $gte: startOfWeek, $lte: endOfWeek }, // Filtrer par semaine en cours
+            createdAt: { $gte: startOfWeek, $lte: endOfWeek }, 
           },
         },
         {
@@ -198,16 +196,16 @@ exports.getCreatedFilesThisWeek = async (req, res) => {
 
   exports.getModifiedFilesThisWeek = async (req, res) => {
   try {
-    const userId = req.user._id; // ID de l'utilisateur connecté
-    const startOfWeek = moment().startOf('week').toDate(); // Début de la semaine
-    const endOfWeek = moment().endOf('week').toDate(); // Fin de la semaine
+    const userId = req.user._id; 
+    const startOfWeek = moment().startOf('week').toDate(); 
+    const endOfWeek = moment().endOf('week').toDate(); 
 
     const stats = await File.aggregate([
       {
         $match: {
             userId: mongoose.Types.ObjectId(userId),
-          updatedAt: { $gte: startOfWeek, $lte: endOfWeek }, // Filtrer par semaine en cours
-          $expr: { $ne: ['$createdAt', '$updatedAt'] }, // Exclure les fichiers non modifiés
+          updatedAt: { $gte: startOfWeek, $lte: endOfWeek }, 
+          $expr: { $ne: ['$createdAt', '$updatedAt'] }, 
         },
       },
       {
