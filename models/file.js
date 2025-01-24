@@ -12,6 +12,10 @@ const fileSchema = new mongoose.Schema({
     content: {
         type: String,
         default: ''
+    },
+    language: {
+        type: String,
+        required: true
     }
     
 },

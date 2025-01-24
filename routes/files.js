@@ -10,8 +10,8 @@ router.get('/getFileById/:id', fileController.getFileById);
 router.get('/countByUser', fileController.getFilesCountByUser);
 router.get('/countByMonth' , fileController.countByMonth);
 router.get('/modifiedStats' , fileController.modifiedstats);
-router.get('/getCreatedFiles' , fileController.getCreatedFilesThisWeek);
-router.get('/getModifiedFiles' , fileController.getModifiedFilesThisWeek);
+router.get('/getCreatedFiles' ,auth, fileController.getCreatedFilesThisWeek);
+router.get('/getModifiedFiles' ,auth, fileController.getModifiedFilesThisWeek);
 
 
 router.post('/addFile',auth, fileController.createFile);

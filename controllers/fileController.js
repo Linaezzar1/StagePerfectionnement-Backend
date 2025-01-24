@@ -30,7 +30,7 @@ exports.getFileById = async (req, res) => {
 
 exports.createFile = async (req, res) => {
     try {
-        const { name, content  } = req.body;
+        const { name, content, language  } = req.body;
         const userId = req.user._id;  
 
 
@@ -38,7 +38,8 @@ exports.createFile = async (req, res) => {
         const newFile = new File({
             userId,
             name,
-            content: content || '' // Définit un contenu par défaut si non fourni
+            content: content || '', // Définit un contenu par défaut si non fourni,
+            language: language
         });
 
         // Sauvegardez le fichier dans la base de données
@@ -164,13 +165,23 @@ exports.modifiedstats = async (req, res) => {
 exports.getCreatedFilesThisWeek = async (req, res) => {
     try {
       const userId = req.user._id; // ID de l'utilisateur connecté
+
+      console.log('User ID:', userId);
+
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: 'ID utilisateur invalide' });
+      }
+  
       const startOfWeek = moment().startOf('week').toDate(); // Début de la semaine
-      const endOfWeek = moment().endOf('week').toDate(); // Fin de la semaine
+      const endOfWeek = moment(startOfWeek).endOf('week').toDate(); // Fin de la semaine
+      console.log(startOfWeek);
+      console.log(endOfWeek);
+      
   
       const stats = await File.aggregate([
         {
           $match: {
-            userId, // Filtrer par utilisateur
+            userId: mongoose.Types.ObjectId(userId), 
             createdAt: { $gte: startOfWeek, $lte: endOfWeek }, // Filtrer par semaine en cours
           },
         },
@@ -186,30 +197,30 @@ exports.getCreatedFilesThisWeek = async (req, res) => {
   };
 
   exports.getModifiedFilesThisWeek = async (req, res) => {
-    try {
-      const userId = req.user._id; // ID de l'utilisateur connecté
-      const startOfWeek = moment().startOf('week').toDate(); // Début de la semaine
-      const endOfWeek = moment().endOf('week').toDate(); // Fin de la semaine
-  
-      const stats = await File.aggregate([
-        {
-          $match: {
-            userId, // Filtrer par utilisateur
-            updatedAt: { $gte: startOfWeek, $lte: endOfWeek }, // Filtrer par semaine en cours
-            $expr: { $ne: ['$createdAt', '$updatedAt'] }, // Exclure les fichiers non modifiés
-          },
+  try {
+    const userId = req.user._id; // ID de l'utilisateur connecté
+    const startOfWeek = moment().startOf('week').toDate(); // Début de la semaine
+    const endOfWeek = moment().endOf('week').toDate(); // Fin de la semaine
+
+    const stats = await File.aggregate([
+      {
+        $match: {
+            userId: mongoose.Types.ObjectId(userId),
+          updatedAt: { $gte: startOfWeek, $lte: endOfWeek }, // Filtrer par semaine en cours
+          $expr: { $ne: ['$createdAt', '$updatedAt'] }, // Exclure les fichiers non modifiés
         },
-        {
-          $count: 'totalFiles',
-        },
-      ]);
-  
-      res.status(200).json(stats[0] || { totalFiles: 0 });
-    } catch (error) {
-      res.status(500).json({ message: 'Erreur lors de la récupération des fichiers modifiés cette semaine', error });
-    }
-  };
-  
+      },
+      {
+        $count: 'totalFiles',
+      },
+    ]);
+
+    res.status(200).json(stats[0] || { totalFiles: 0 });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des fichiers modifiés cette semaine', error });
+  }
+};
+
 
 
 

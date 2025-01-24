@@ -1,16 +1,15 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 
-mongoose.connect("mongodb://127.0.0.1:27017/Stage")
-    .then(
-        ()=> {
-            console.log('Connected to MongoDB Atlas');
-            
-        }
-    )
-    .catch(
-        (error) => {
-            console.error('Failed to connect to MongoDB Atlas', error);
-        }
-    );
+const mongoURI = process.env.MONGO_URI;
 
-    module.exports = mongoose;
+if (!mongoURI) {
+    console.error("MONGO_URI is not defined in the environment variables.");
+    process.exit(1); // Arrête l'application si la variable n'est pas définie
+}
+
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.log('Failed to connect to MongoDB', err));
+
+module.exports = mongoose;
