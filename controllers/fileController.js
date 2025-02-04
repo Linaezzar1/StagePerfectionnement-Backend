@@ -1,14 +1,39 @@
 const File = require('../models/file');
 const User = require('../models/user');
 const moment = require('moment');
+const mongoose = require('mongoose');
+const { ObjectId } = require('mongodb'); // Import ObjectId from the MongoDB driver
+const path = require('path');
+const fs = require('fs');
+
+
 
 exports.getFiles = async (req, res) => {
-    try {
-        const files = await File.find();
-        res.status(200).json(files);
-    } catch (error) {
-        res.status(500).json({ message: "Erreur lors de la récupération des fichiers", error });
-    }
+  try {
+      const files = await File.find().populate('userId', 'name'); // 'username' est le champ de l'utilisateur que vous voulez afficher
+      res.status(200).json(files);
+  } catch (error) {
+      res.status(500).json({ message: "Erreur lors de la récupération des fichiers", error });
+  }
+};
+
+// Récupérer tous les fichiers d'un utilisateur spécifique
+exports.getAllFilesByUserId = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+      // Vérification de l'ID utilisateur
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+          return res.status(400).json({ message: "ID utilisateur invalide" });
+      }
+
+      const userFiles = await File.find({ userId: userId }).populate('userId', 'name'); // Populate pour afficher le nom
+
+      res.status(200).json(userFiles);
+  } catch (error) {
+      console.error('Erreur lors de la récupération des fichiers de l\'utilisateur :', error);
+      res.status(500).json({ message: 'Erreur serveur' });
+  }
 };
 
 
@@ -98,7 +123,15 @@ exports.getFilesCountByUser = async (req, res) => {
         },
         {
           $unwind: "$userInfo" 
-        }
+        },
+        {
+          $project: {
+            _id: 0,
+            userId: "$_id",
+            username: "$userInfo.name",
+            totalFiles: 1,
+          },
+        },
       ]);
 
       console.log(files);
@@ -160,64 +193,118 @@ exports.modifiedstats = async (req, res) => {
 };
 
 
+
 exports.getCreatedFilesThisWeek = async (req, res) => {
     try {
-      const userId = req.user._id; 
+        const userId = req.user._id; // Get the user ID from the authenticated request
+        console.log('User ID:', userId);
+
+        // Validate the user ID
+        if (!ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'ID utilisateur invalide' });
+        }
+
+        // Calculate the start and end of the current week
+        const startOfWeek = moment().startOf('week').toDate();
+        const endOfWeek = moment().endOf('week').toDate();
+
+        console.log('Start of Week:', startOfWeek);
+        console.log('End of Week:', endOfWeek);
+
+        // Aggregate to count the files created by the user this week
+        const stats = await File.aggregate([
+            {
+                $match: {
+                    userId: new ObjectId(userId), // Use new ObjectId() here
+                    createdAt: { $gte: startOfWeek, $lte: endOfWeek }, // Match files created within the current week
+                },
+            },
+            {
+                $count: 'totalFiles', // Count the number of files
+            },
+        ]);
+
+        console.log('Aggregation Result:', stats);
+
+        // Return the count of files created this week
+        res.status(200).json(stats[0] || { totalFiles: 0 });
+    } catch (error) {
+        console.error('Error in getCreatedFilesThisWeek:', error);
+        res.status(500).json({ message: 'Erreur lors de la récupération des fichiers créés cette semaine', error: error.message });
+    }
+};
+exports.getModifiedFilesThisWeek = async (req, res) => {
+  try {
+      const userId = req.user._id; // Get the user ID from the authenticated request
 
       console.log('User ID:', userId);
 
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({ message: 'ID utilisateur invalide' });
+      // Validate the user ID
+      if (!ObjectId.isValid(userId)) {
+          return res.status(400).json({ message: 'ID utilisateur invalide' });
       }
-  
-      const startOfWeek = moment().startOf('week').toDate(); 
-      const endOfWeek = moment(startOfWeek).endOf('week').toDate();
-      console.log(startOfWeek);
-      console.log(endOfWeek);
-      
-  
+
+      // Calculate the start and end of the current week
+      const startOfWeek = moment().startOf('week').toDate();
+      const endOfWeek = moment().endOf('week').toDate();
+
+      console.log('Start of Week:', startOfWeek);
+      console.log('End of Week:', endOfWeek);
+
+      // Aggregate to count the files modified by the user this week
       const stats = await File.aggregate([
-        {
-          $match: {
-            userId: mongoose.Types.ObjectId(userId), 
-            createdAt: { $gte: startOfWeek, $lte: endOfWeek }, 
+          {
+              $match: {
+                  userId: new ObjectId(userId), // Use new ObjectId() here
+                  updatedAt: { $gte: startOfWeek, $lte: endOfWeek }, // Match files modified within the current week
+                  $expr: { $ne: ['$createdAt', '$updatedAt'] }, // Ensure createdAt and updatedAt are different
+              },
           },
-        },
-        {
-          $count: 'totalFiles',
-        },
+          {
+              $count: 'totalFiles', // Count the number of files
+          },
       ]);
-  
+
+      console.log('Aggregation Result:', stats);
+
+      // Return the count of files modified this week
       res.status(200).json(stats[0] || { totalFiles: 0 });
-    } catch (error) {
-      res.status(500).json({ message: 'Erreur lors de la récupération des fichiers créés cette semaine', error });
-    }
-  };
-
-  exports.getModifiedFilesThisWeek = async (req, res) => {
-  try {
-    const userId = req.user._id; 
-    const startOfWeek = moment().startOf('week').toDate(); 
-    const endOfWeek = moment().endOf('week').toDate(); 
-
-    const stats = await File.aggregate([
-      {
-        $match: {
-            userId: mongoose.Types.ObjectId(userId),
-          updatedAt: { $gte: startOfWeek, $lte: endOfWeek }, 
-          $expr: { $ne: ['$createdAt', '$updatedAt'] }, 
-        },
-      },
-      {
-        $count: 'totalFiles',
-      },
-    ]);
-
-    res.status(200).json(stats[0] || { totalFiles: 0 });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la récupération des fichiers modifiés cette semaine', error });
+      console.error('Error in getModifiedFilesThisWeek:', error);
+      res.status(500).json({ message: 'Erreur lors de la récupération des fichiers modifiés cette semaine', error: error.message });
   }
 };
+
+
+// Fonction pour récupérer les fichiers créés par jour sur une semaine
+exports.getFilesCreatedPerDay = async (req, res) => {
+  try {
+      const sevenDaysAgo = moment().subtract(6, 'days').startOf('day');
+      
+      const files = await File.aggregate([
+          {
+              $match: { createdAt: { $gte: sevenDaysAgo.toDate() } }
+          },
+          {
+              $group: {
+                  _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                  count: { $sum: 1 }
+              }
+          },
+          { $sort: { _id: 1 } }
+      ]);
+
+      res.json(files);
+  } catch (error) {
+      res.status(500).json({ message: "Erreur serveur", error });
+  }
+};
+
+
+
+
+
+
 
 
 

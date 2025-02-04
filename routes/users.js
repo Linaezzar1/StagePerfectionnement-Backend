@@ -15,4 +15,6 @@ router.get('/currentUser', auth, userController.getCurrentUser);
 
 router.patch('/activeStatus' , userController.updateActiveStatus);
 
+router.delete('/deleteUser' , userController.deleteUser);
+
 module.exports = router;

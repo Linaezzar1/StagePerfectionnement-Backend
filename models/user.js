@@ -23,8 +23,7 @@ const UserSchema = new mongoose.Schema(
             required: true
         },
         ActiveStatus: {
-            type: String,
-            default: 'inactive', 
+            type: String 
           }
     },
     {timestamps: true}
