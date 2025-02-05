@@ -22,12 +22,23 @@ const UserSchema = new mongoose.Schema(
             default: 'user', 
             required: true
         },
-        ActiveStatus: {
-            type: String 
-          }
+        lastActive: {  
+            type: Date,
+            default: Date.now 
+        }
     },
     {timestamps: true}
 );
+
+UserSchema.pre('save', function (next) {
+    this.lastActive = new Date();  // Met à jour la dernière activité
+    next();
+});
+
+UserSchema.pre('findOneAndUpdate', function (next) {
+    this.set({ lastActive: new Date() }); // Met à jour lastActive lors d'une modification
+    next();
+});
 
 const User = mongoose.model('User', UserSchema);
 module.exports = User;

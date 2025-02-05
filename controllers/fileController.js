@@ -300,6 +300,33 @@ exports.getFilesCreatedPerDay = async (req, res) => {
   }
 };
 
+exports.getFilesModifiedPerDay = async (req, res) => {
+  try {
+      const sevenDaysAgo = moment().subtract(6, 'days').startOf('day');
+      
+      const files = await File.aggregate([
+          {
+              $match: {
+                  updatedAt: { $gte: sevenDaysAgo.toDate() },
+                  $expr: { $ne: ['$createdAt', '$updatedAt'] } // Vérifier que le fichier a été modifié
+              }
+          },
+          {
+              $group: {
+                  _id: { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+                  count: { $sum: 1 }
+              }
+          },
+          { $sort: { _id: 1 } }
+      ]);
+
+      res.status(200).json(files);
+  } catch (error) {
+      console.error("Erreur lors de la récupération des fichiers modifiés par jour:", error);
+      res.status(500).json({ message: "Erreur serveur", error });
+  }
+};
+
 
 
 

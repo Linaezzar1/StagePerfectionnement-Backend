@@ -27,33 +27,41 @@ exports.signup = async (req, res) => {
     }
 };
 
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
     let data = req.body;
-    User.findOne({ email: data.email })
-        .then((user) => {
-            if (!user) {
-                return res.status(400).send('Mail invalid');
-            }
-            bcrypt.compare(data.password, user.password, (err, valid) => {
-                if (err) return res.status(500).send('Error occurred: ' + err.message);
-                if (!valid) return res.status(400).send('Password invalid!');
+    try {
+        let user = await User.findOne({ email: data.email });
 
-                let payload = {
-                    _id: user._id,
-                    email: user.email,
-                    name: user.name,
-                    lastname: user.lastname,
-                    role: user.role
-                };
+        if (!user) {
+            return res.status(400).send('Mail invalid');
+        }
 
-                let token = jwt.sign(payload, '123456789');
-                res.status(200).send({ mytoken: token, user: user });
-            });
-        })
-        .catch((err) => {
-            res.status(400).send('Error occurred:' + err.message);
-        });
+        const valid = await bcrypt.compare(data.password, user.password);
+        if (!valid) {
+            return res.status(400).send('Password invalid!');
+        }
+
+        // Mettre à jour la dernière activité avant de répondre
+        user.lastActive = new Date();
+        await user.save();
+
+        let payload = {
+            _id: user._id,
+            email: user.email,
+            name: user.name,
+            lastname: user.lastname,
+            role: user.role
+        };
+
+        let token = jwt.sign(payload, '123456789');
+
+        res.status(200).send({ mytoken: token, user });
+
+    } catch (err) {
+        res.status(500).send('Error occurred: ' + err.message);
+    }
 };
+
 
 exports.getAllUsers = (req, res) => {
     User.find({})
@@ -104,57 +112,6 @@ exports.getCurrentUser = async (req, res) => {
 };
 
 
-exports.resetPassword = async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
-    const userId = req.user._id;
-
-    try {
-        const user = await User.findOne({ _id: userId });
-        if (!user) {
-            return res.status(404).json({ message: 'Current password is incorrect!' });
-        }
-
-        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-        if (!isPasswordValid) {
-            return res.status(400).json({ message: 'Current password is incorrect!' });
-        }
-
-        if (currentPassword === newPassword) {
-            return res.status(400).json({ message: 'New password cannot be the same as the current password!' });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(newPassword, salt);
-
-        await user.save();
-        res.status(200).json({ message: 'Password has been reset successfully!' });
-
-    } catch (error) {
-        console.error('Error while resetting password:', error);
-        return res.status(500).json({ message: 'Error while resetting password', error: error.message })
-    }
-}
-
-exports.updateActiveStatus = async (req, res) => {
-    const { userId, isActive } = req.body;
-
-    try {
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        user.ActiveStatus = isActive ? 'Active' : 'Inactive';
-        await user.save();
-
-        res.status(200).json({ message: 'Active status updated successfully' });
-    } catch (error) {
-        console.error('Error updating active status:', error);
-        res.status(500).json({ message: 'Error updating active status' });
-    }
-};
-
 exports.deleteUser = async (req, res) => {
     const { userId } = req.body; // Tu peux récupérer l'ID de l'utilisateur à supprimer dans le corps de la requête
 
@@ -174,4 +131,39 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ message: 'Erreur lors de la suppression de l\'utilisateur' });
     }
 };
+
+
+
+// Fonction pour mettre à jour l'activité utilisateur
+exports.updateLastActive = async (req, res) => {
+    try {
+        const { userId } = req.body;  // Récupérer l'ID envoyé par le frontend
+
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { lastActive: new Date() },
+            { new: true, timestamps: false }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({ 
+            message: "User activity updated successfully", 
+            lastActive: updatedUser.lastActive 
+        });
+
+    } catch (error) {
+        console.error("Error updating user activity:", error);
+        res.status(500).json({ message: "Failed to update user activity" });
+    }
+};
+
+
+
 

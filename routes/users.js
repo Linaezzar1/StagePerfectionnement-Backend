@@ -6,15 +6,15 @@ const auth = require('../middleware/auth');
 
 router.post('/signup',validateLogin, userController.signup);
 router.post('/login',validateLogin, userController.login);
-router.post('/resetPassword', auth , userController.resetPassword);
 
 
 router.get('/all', userController.getAllUsers);
 router.get('/userbyid/:id', userController.getUserById);
 router.get('/currentUser', auth, userController.getCurrentUser);
 
-router.patch('/activeStatus' , userController.updateActiveStatus);
 
 router.delete('/deleteUser' , userController.deleteUser);
+
+router.put('/activity', userController.updateLastActive);
 
 module.exports = router;

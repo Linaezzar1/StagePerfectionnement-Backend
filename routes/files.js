@@ -15,6 +15,7 @@ router.get('/modifiedStats' , fileController.modifiedstats);
 router.get('/getCreatedFiles' ,auth, fileController.getCreatedFilesThisWeek);
 router.get('/getModifiedFiles' ,auth, fileController.getModifiedFilesThisWeek);
 router.get('/filesperday', fileController.getFilesCreatedPerDay);
+router.get('/modifiedperday', fileController.getFilesModifiedPerDay);
 router.get('/getUserFiles',auth, fileController.getAllFilesByUserId);
 
 router.post('/addFile',auth, fileController.createFile);
