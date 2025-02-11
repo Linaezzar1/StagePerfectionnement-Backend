@@ -1,23 +1,28 @@
 const Message = require('../models/message');
 
 exports.createMessage = async (req, res) => {
-    try {
-        const { content, targetUserId } = req.body;
+  try {
+      const { content, targetUserId } = req.body;
+      const sender = req.user._id; 
 
-        if (!content) return res.status(400).json({ message: "Le contenu est requis." });
+      if (!content || !targetUserId) {
+          return res.status(400).json({ message: "Le contenu et le destinataire sont requis." });
+      }
 
-        const newMessage = new Message({
-            sender: req.user.id, // User qui envoie
-            targetUserId: targetUserId, // Destinataire
-            content,
-            timestamp: new Date()
-        });
+      const newMessage = new Message({
+          sender,
+          targetUserId,
+          content,
+          timestamp: new Date(),
+      });
 
-        await newMessage.save();
-        res.status(201).json(newMessage);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+      await newMessage.save();
+
+      res.status(201).json(newMessage);
+  } catch (error) {
+      console.error("Erreur lors de l'enregistrement du message :", error);
+      res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
 };
 
 exports.getAllMessages = async (req, res) => {
@@ -39,8 +44,8 @@ exports.getMessageByUserId = async (req, res) => {
       const messages = await Message.find({
         $or: [{ sender: userId }, { targetUserId: userId }]
       })
-        .populate('sender', 'username')
-        .populate('targetUserId', 'username')
+        .populate('sender', 'name')
+        .populate('targetUserId', 'name')
         .sort({ timestamp: 1 });
   
       
